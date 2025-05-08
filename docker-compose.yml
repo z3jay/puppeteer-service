@@ -6,26 +6,9 @@ services:
     networks:
       - dokploy-network
     shm_size: 1gb
+    # Setting traefik.enable=false prevents Traefik from exposing this service
     labels:
-      - traefik.docker.network=dokploy-network
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-web.rule=Host(`puppeteer.jcgglobal.de`)
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-web.entrypoints=web
-      - traefik.http.services.n8n-puppeteerservice-wrslnr-36-web.loadbalancer.server.port=3000
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-web.service=n8n-puppeteerservice-wrslnr-36-web
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-web.middlewares=redirect-to-https@file,n8n-puppeteerservice-cors
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-websecure.rule=Host(`puppeteer.jcgglobal.de`)
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-websecure.entrypoints=websecure
-      - traefik.http.services.n8n-puppeteerservice-wrslnr-36-websecure.loadbalancer.server.port=3000
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-websecure.service=n8n-puppeteerservice-wrslnr-36-websecure
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-websecure.tls.certresolver=letsencrypt
-      - traefik.http.routers.n8n-puppeteerservice-wrslnr-36-websecure.middlewares=n8n-puppeteerservice-cors
-      - traefik.enable=true
-      
-      # Headers middleware to allow all HTTP methods
-      - traefik.http.middlewares.n8n-puppeteerservice-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,PATCH,OPTIONS
-      - traefik.http.middlewares.n8n-puppeteerservice-cors.headers.accesscontrolallowheaders=*
-      - traefik.http.middlewares.n8n-puppeteerservice-cors.headers.accesscontrolalloworigin=*
-      - traefik.http.middlewares.n8n-puppeteerservice-cors.headers.accesscontrolmaxage=100
+      - traefik.enable=false
 networks:
   dokploy-network:
     external: true
