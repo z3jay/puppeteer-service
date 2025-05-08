@@ -6,6 +6,8 @@ services:
     networks:
       - dokploy-network
     shm_size: 1gb
+    expose:
+      - 3000
     # Setting traefik.enable=false prevents Traefik from exposing this service
     labels:
       - traefik.enable=true
