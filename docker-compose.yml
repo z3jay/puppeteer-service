@@ -3,7 +3,7 @@ services:
 
   puppeteer-service:
     build:
-      context: ./puppeteer-service
+      context: ./etc
       dockerfile: Dockerfile
     expose:
       - 3000
