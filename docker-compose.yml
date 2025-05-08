@@ -4,7 +4,7 @@ services:
   puppeteer-service:
     build:
       context: .
-      dockerfile: etc/Dockerfile
+      dockerfile: Dockerfile
     expose:
       - 3000
     networks:
