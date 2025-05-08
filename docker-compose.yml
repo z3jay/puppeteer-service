@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+
+  puppeteer-service:
+    build:
+      context: ./puppeteer-service
+      dockerfile: Dockerfile
+    expose:
+      - 3000
+    networks:
+      - dokploy-network
+    shm_size: 1gb
+    # so Chrome doesn't crash under load
+
+
+networks:
+  dokploy-network:
+    external: true
+
