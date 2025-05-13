@@ -21,8 +21,8 @@ async function launchBrowser() {
 app.post('/screenshot', async (req, res) => {
   const {
     html,
-    width = 800,
-    height = 600,
+    width = 1080,
+    height = 1080,
     omitBackground = false
   } = req.body;
 
@@ -50,8 +50,8 @@ app.post('/screenshot', async (req, res) => {
 app.post('/video', async (req, res, next) => {
   const {
     html,
-    width = 800,
-    height = 600,
+    width = 1080,
+    height = 1920,
     fps = 25,
     duration = 5,
     omitBackground = false
