@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     networks:
       - dokploy-network
+    restart: always
     shm_size: 1gb
     expose:
       - 3000
