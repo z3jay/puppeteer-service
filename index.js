@@ -3,6 +3,7 @@ const puppeteer = require('puppeteer');
 const ffmpeg = require('fluent-ffmpeg');
 const stream = require('stream');
 const os = require('os');
+const upload = multer({ dest: os.tmpdir() });
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
