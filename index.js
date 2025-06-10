@@ -33,8 +33,13 @@ app.post('/convert/raw-to-mp3', upload.single('audio'), async (req, res, next) =
     return res.status(400).send('Missing `audio` file upload.');
   }
 
-  // Get conversion parameters from the request body, with defaults for Gemini TTS
-  const { sampleRate = '24000', channels = '1', quality = '2' } = req.body;
+  // Get conversion parameters from the request body
+  const { 
+    sampleRate = '24000', 
+    channels = '1', 
+    quality = '2',
+    inputCodec = 's16le' // Default to signed 16-bit little-endian PCM
+  } = req.body;
 
   try {
     // 2. Set response header for MP3 audio
@@ -42,14 +47,15 @@ app.post('/convert/raw-to-mp3', upload.single('audio'), async (req, res, next) =
 
     // 3. Use FFmpeg to convert the raw audio to MP3 and stream it
     ffmpeg(audioFile.path)
-      .inputFormat('s16le') // Input format: signed 16-bit little-endian PCM
-      .audioChannels(channels) // Input channels
-      .audioFrequency(sampleRate) // Input sample rate
+      .inputOptions([
+        `-f ${inputCodec}`, // Explicitly set the input format codec
+        `-ar ${sampleRate}`, // Set input sample rate
+        `-ac ${channels}` // Set input audio channels
+      ])
       .audioCodec('libmp3lame') // Output codec
       .audioQuality(quality) // Output quality (0-9, lower is better)
       .toFormat('mp3')
       .on('error', (err) => {
-        // Handle errors during conversion
         console.error('An error occurred during FFmpeg processing:', err.message);
         next(err);
       })
