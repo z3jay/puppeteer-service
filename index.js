@@ -3,6 +3,12 @@ const puppeteer = require('puppeteer');
 const ffmpeg = require('fluent-ffmpeg');
 const stream = require('stream');
 const os = require('os');
+const multer = require('multer');
+const fs = require('fs').promises;
+const path = require('path');
+
+// --- Setup Multer for file uploads ---
+// This will save uploaded files to a temporary directory
 const upload = multer({ dest: os.tmpdir() });
 
 const app = express();
@@ -13,10 +19,56 @@ async function launchBrowser() {
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      `--disable-dev-shm-usage`
-    ]
+      '--disable-dev-shm-usage',
+    ],
   });
 }
+
+// --- NEW /convert/raw-to-mp3 Endpoint ---
+// This endpoint accepts a raw audio file and converts it to MP3
+app.post('/convert/raw-to-mp3', upload.single('audio'), async (req, res, next) => {
+  // 1. Validate inputs
+  const audioFile = req.file;
+  if (!audioFile) {
+    return res.status(400).send('Missing `audio` file upload.');
+  }
+
+  // Get conversion parameters from the request body, with defaults for Gemini TTS
+  const { sampleRate = '24000', channels = '1', quality = '2' } = req.body;
+
+  try {
+    // 2. Set response header for MP3 audio
+    res.setHeader('Content-Type', 'audio/mpeg');
+
+    // 3. Use FFmpeg to convert the raw audio to MP3 and stream it
+    ffmpeg(audioFile.path)
+      .inputFormat('s16le') // Input format: signed 16-bit little-endian PCM
+      .audioChannels(channels) // Input channels
+      .audioFrequency(sampleRate) // Input sample rate
+      .audioCodec('libmp3lame') // Output codec
+      .audioQuality(quality) // Output quality (0-9, lower is better)
+      .toFormat('mp3')
+      .on('error', (err) => {
+        // Handle errors during conversion
+        console.error('An error occurred during FFmpeg processing:', err.message);
+        next(err);
+      })
+      .pipe(res, { end: true }); // Stream the output directly to the response
+
+  } catch (error) {
+    console.error('An unexpected error occurred:', error.message);
+    next(error);
+  } finally {
+    // 4. Clean up the temporary uploaded file after the response is sent
+    res.on('finish', async () => {
+      try {
+        await fs.unlink(audioFile.path);
+      } catch (e) {
+        console.error("Error cleaning up temp file:", e.message);
+      }
+    });
+  }
+});
 
 // --- Screenshot endpoint ---
 app.post('/screenshot', async (req, res) => {
