@@ -88,7 +88,7 @@ app.post('/convert/gemini-audio-to-mp3', async (req, res, next) => {
       return res.status(400).send('Invalid Gemini response format: Expected a JSON array.');
     }
 
-    const inlineData = geminiResponse[0]?.candidates[0]?.content?.parts[0]?.inlineData;
+    const inlineData = geminiResponse?.[0]?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
     if (!inlineData || !inlineData.data || !inlineData.mimeType) {
         return res.status(400).send('Missing audio data in Gemini response. Expected inlineData with data and mimeType.');
     }
