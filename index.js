@@ -76,6 +76,75 @@ app.post('/convert/raw-to-mp3', upload.single('audio'), async (req, res, next) =
   }
 });
 
+// --- NEW /convert/gemini-audio-to-mp3 Endpoint ---
+// This endpoint accepts a Gemini API JSON response and converts the contained audio to MP3.
+app.post('/convert/gemini-audio-to-mp3', async (req, res, next) => {
+  let tempFilePath;
+
+  try {
+    // 1. Validate and extract data from the Gemini response
+    const geminiResponse = req.body;
+    if (!geminiResponse || !Array.isArray(geminiResponse) || geminiResponse.length === 0) {
+      return res.status(400).send('Invalid Gemini response format: Expected a JSON array.');
+    }
+
+    const inlineData = geminiResponse[0]?.candidates[0]?.content?.parts[0]?.inlineData;
+    if (!inlineData || !inlineData.data || !inlineData.mimeType) {
+        return res.status(400).send('Missing audio data in Gemini response. Expected inlineData with data and mimeType.');
+    }
+
+    const { mimeType, data: base64Audio } = inlineData;
+
+    // 2. Parse mimeType to get audio parameters
+    const rateMatch = mimeType.match(/rate=(\d+)/);
+    const sampleRate = rateMatch ? rateMatch[1] : '24000'; // Default to 24000Hz if not specified
+
+    // Gemini's audio/L16 is signed 16-bit little-endian PCM.
+    const inputCodec = 's16le'; 
+    const channels = '1'; // Gemini TTS is typically mono
+    const quality = '2'; // A good default for quality
+
+    // 3. Decode base64 audio and write to a temporary file
+    const audioBuffer = Buffer.from(base64Audio, 'base64');
+    tempFilePath = path.join(os.tmpdir(), `gemini-audio-${Date.now()}.raw`);
+    await fs.writeFile(tempFilePath, audioBuffer);
+    
+    // 4. Set response header for MP3 audio
+    res.setHeader('Content-Type', 'audio/mpeg');
+
+    // 5. Use FFmpeg to convert the raw audio to MP3 and stream it to the response
+    ffmpeg(tempFilePath)
+      .inputOptions([
+        `-f ${inputCodec}`,
+        `-ar ${sampleRate}`,
+        `-ac ${channels}`
+      ])
+      .audioCodec('libmp3lame')
+      .audioQuality(quality)
+      .toFormat('mp3')
+      .on('error', (err) => {
+        console.error('An error occurred during FFmpeg processing:', err.message);
+        next(err);
+      })
+      .pipe(res, { end: true });
+
+  } catch (error) {
+    console.error('An unexpected error occurred:', error.message);
+    next(error);
+  } finally {
+    // 6. Clean up the temporary file after the response is sent
+    res.on('finish', async () => {
+        if (tempFilePath) {
+            try {
+                await fs.unlink(tempFilePath);
+            } catch (e) {
+                console.error("Error cleaning up temp file:", e.message);
+            }
+        }
+    });
+  }
+});
+
 // --- Screenshot endpoint ---
 app.post('/screenshot', async (req, res) => {
   const {
